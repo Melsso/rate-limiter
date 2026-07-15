@@ -21,6 +21,7 @@ httpx = "^0.28"
 testcontainers = "^4.0"
 ruff = "^0.15.21"
 mypy = "^2.3.0"
+pytest-benchmark = "^5.2.3"
 
 [tool.ruff]
 line-length = 88

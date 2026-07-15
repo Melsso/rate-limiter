@@ -295,6 +295,53 @@ Build package:
 
 ---
 
+## Benchmarks
+
+Benchmarks measure full request latency:
+```text
+    Application → rate limiter → redis-py → Redis → algorithm → response
+```
+
+Environment:
+- Python 3.11
+- Redis localhost
+- asyncio Redis client
+- Single Redis instance
+
+Run benchmarks:
+```bash
+    poetry run pytest benchmarks --benchmark-only
+```
+
+The benchmark suite currently covers:
+- Fixed Window limiter
+- Sliding Window limiter
+- Token Bucket limiter
+- Concurrent request performance for all algorithms
+
+Latest benchmark results:
+```text
+Name (time in us)                                    Mean (us)      OPS
+---------------------------------------------------------------------------
+test_token_bucket_benchmark                          184.32        5,425 ops/s
+test_fixed_window_benchmark                          254.91        3,922 ops/s
+test_sliding_window_benchmark                        458.87        2,179 ops/s
+
+test_fixed_window_concurrent_benchmark             3712.57          269 ops/s
+test_token_bucket_concurrent_benchmark             3861.41          259 ops/s
+test_sliding_window_concurrent_benchmark          11474.69           87 ops/s
+```
+
+Observations:
+- Token Bucket currently provides the best single-request performance.
+- Fixed Window provides lower latency than Sliding Window due to simpler state management.
+- Sliding Window has higher overhead because it tracks multiple time windows.
+- Concurrent benchmarks show the additional cost of async Redis coordination under contention.
+
+Benchmark results are environment dependent and should be treated as comparative measurements between algorithms rather than absolute throughput guarantees.
+
+---
+
 ## Roadmap
 
 - [x] Fixed Window limiter
