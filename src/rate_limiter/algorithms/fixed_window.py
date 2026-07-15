@@ -3,7 +3,7 @@ from pathlib import Path
 from redis.asyncio import Redis
 
 from rate_limiter.algorithms.base import RateLimiter
-from rate_limiter.schemas.rate_limit import RateLimitResult
+from rate_limiter.schemas import RateLimitResult
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent

@@ -2,9 +2,8 @@ from redis.asyncio import Redis
 
 from rate_limiter.core.config import settings
 
-redis = Redis(
-    host=settings.REDIS_HOST,
-    port=settings.REDIS_PORT,
-    db=settings.REDIS_DB,
+
+redis = Redis.from_url(
+    settings.redis_url,
     decode_responses=True,
 )

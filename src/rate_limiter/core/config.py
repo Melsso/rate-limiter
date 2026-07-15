@@ -1,15 +1,13 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    REDIS_HOST: str = "localhost"
-    REDIS_PORT: int = 6379
-    REDIS_DB: int = 0
+    redis_url: str = "redis://localhost:6379"
+    rate_limit: int = 5
+    rate_window: int = 60
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        extra="ignore",
-    )
+    class Config:
+        env_file = ".env"
 
 
 settings = Settings()

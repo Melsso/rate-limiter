@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from rate_limiter.schemas.rate_limit import RateLimitResult
+from rate_limiter.schemas import RateLimitResult
 
 
 class RateLimiter(ABC):
