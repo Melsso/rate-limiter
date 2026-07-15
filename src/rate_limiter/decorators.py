@@ -4,6 +4,7 @@ from functools import wraps
 from fastapi import Request, Response
 
 from rate_limiter.algorithms.base import RateLimiter
+from rate_limiter.core.response import too_many_requests_response, rate_limit_headers
 
 
 def rate_limit(
@@ -34,26 +35,13 @@ def rate_limit(
             result = await limiter.allow(key)
 
             if not result.allowed:
-                return Response(
-                    content="Too Many Requests",
-                    status_code=429,
-                    headers={
-                        "X-RateLimit-Limit": str(result.limit),
-                        "X-RateLimit-Remaining": str(result.remaining),
-                        "X-RateLimit-Reset": str(result.reset_after),
-                        "Retry-After": str(result.reset_after),
-                    },
-                )
+                return too_many_requests_response(result)
 
             response = await func(*args, **kwargs)
 
             if isinstance(response, Response):
-                response.headers["X-RateLimit-Limit"] = str(result.limit)
-                response.headers["X-RateLimit-Remaining"] = str(
-                    result.remaining
-                )
-                response.headers["X-RateLimit-Reset"] = str(
-                    result.reset_after
+                response.headers.update(
+                    rate_limit_headers(result)
                 )
 
             return response

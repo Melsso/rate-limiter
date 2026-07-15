@@ -5,7 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from rate_limiter.algorithms.base import RateLimiter
-
+from rate_limiter.core.response import too_many_requests_response, rate_limit_headers
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
@@ -26,21 +26,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         result = await self.limiter.allow(key)
 
         if not result.allowed:
-            return Response(
-                content="Too Many Requests",
-                status_code=429,
-                headers={
-                    "X-RateLimit-Limit": str(result.limit),
-                    "X-RateLimit-Remaining": str(result.remaining),
-                    "X-RateLimit-Reset": str(result.reset_after),
-                    "Retry-After": str(result.reset_after),
-                },
-            )
+            return too_many_requests_response(result)
 
         response = await call_next(request)
 
-        response.headers["X-RateLimit-Limit"] = str(result.limit)
-        response.headers["X-RateLimit-Remaining"] = str(result.remaining)
-        response.headers["X-RateLimit-Reset"] = str(result.reset_after)
+        response.headers.update(
+            rate_limit_headers(result)
+        )
 
         return response
