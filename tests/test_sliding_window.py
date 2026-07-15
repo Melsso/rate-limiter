@@ -1,6 +1,6 @@
 import pytest
 
-from rate_limiter.algorithms.sliding_window import SlidingWindow
+from rate_limiter import SlidingWindow
 
 
 @pytest.mark.asyncio

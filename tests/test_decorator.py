@@ -3,8 +3,7 @@ import pytest
 from fastapi import FastAPI, Request
 from httpx import ASGITransport, AsyncClient
 
-from rate_limiter.algorithms.fixed_window import FixedWindow
-from rate_limiter.decorators import rate_limit
+from rate_limiter import FixedWindow, rate_limit
 
 
 @pytest.mark.asyncio

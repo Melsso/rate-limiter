@@ -1,6 +1,6 @@
 import pytest
 
-from rate_limiter.algorithms.fixed_window import FixedWindow
+from rate_limiter import FixedWindow
 
 
 @pytest.mark.asyncio

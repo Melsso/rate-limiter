@@ -2,8 +2,7 @@ from fastapi import FastAPI
 
 from rate_limiter.core.container import limiter
 from rate_limiter.core.redis import redis
-from rate_limiter.middleware.rate_limiter import RateLimitMiddleware
-
+from rate_limiter.middleware import RateLimitMiddleware
 
 app = FastAPI()
 app.add_middleware(

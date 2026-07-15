@@ -1,6 +1,6 @@
 import pytest
 
-from rate_limiter.algorithms.token_bucket import TokenBucket
+from rate_limiter import TokenBucket
 
 
 @pytest.mark.asyncio

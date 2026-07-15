@@ -1,6 +1,4 @@
-from rate_limiter.algorithms.fixed_window import FixedWindow
-from rate_limiter.algorithms.token_bucket import TokenBucket
-from rate_limiter.algorithms.sliding_window import SlidingWindow
+from rate_limiter import FixedWindow, TokenBucket, SlidingWindow
 
 from rate_limiter.core.redis import redis
 from rate_limiter.core.config import settings

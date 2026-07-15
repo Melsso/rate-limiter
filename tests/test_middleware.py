@@ -2,9 +2,8 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from rate_limiter.algorithms.fixed_window import FixedWindow
-from rate_limiter.middleware.rate_limiter import RateLimitMiddleware
-
+from rate_limiter import FixedWindow
+from rate_limiter.middleware import RateLimitMiddleware
 
 @pytest.mark.asyncio
 async def test_rate_limit_middleware_blocks_requests(redis):
