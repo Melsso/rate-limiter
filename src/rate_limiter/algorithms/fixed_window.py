@@ -2,6 +2,7 @@ from pathlib import Path
 
 from redis.asyncio import Redis
 
+from rate_limiter.algorithms.base import RateLimiter
 from rate_limiter.schemas.rate_limit import RateLimitResult
 
 
@@ -9,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 LUA_DIR = BASE_DIR / "lua"
 
 
-class FixedWindow:
+class FixedWindow(RateLimiter):
     def __init__(
         self,
         redis: Redis,

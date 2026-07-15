@@ -4,14 +4,14 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from rate_limiter.algorithms.fixed_window import FixedWindow
+from rate_limiter.algorithms.base import RateLimiter
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        limiter: FixedWindow,
+        limiter: RateLimiter,
     ):
         super().__init__(app)
         self.limiter = limiter
