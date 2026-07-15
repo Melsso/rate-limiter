@@ -1,27 +1,21 @@
-[project]
+[tool.poetry]
 name = "rate-limiter"
 version = "0.1.0"
-description = ""
-authors = [
-    {name = "Mallem Sofiane",email = "melsopv@gmail.com"}
-]
+description = "Redis backed FastAPI rate limiter"
+authors = ["Your Name <your@email.com>"]
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-    "fastapi (>=0.139.0,<0.140.0)",
-    "uvicorn (>=0.51.0,<0.52.0)",
-    "redis (>=8.0.1,<9.0.0)",
-    "pydantic-settings (>=2.14.2,<3.0.0)",
-    "pytest (>=9.1.1,<10.0.0)",
-    "pytest-asyncio (>=1.4.0,<2.0.0)",
-    "httpx (>=0.28.1,<0.29.0)",
-    "ruff (>=0.15.21,<0.16.0)",
-    "mypy (>=2.3.0,<3.0.0)"
+packages = [
+    { include = "rate_limiter", from = "src" }
 ]
 
-[tool.poetry]
-packages = [{include = "rate_limiter", from = "src"}]
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115"
+redis = "^6.0"
+pydantic-settings = "^2.0"
 
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0"
+pytest-asyncio = "^1.0"
+httpx = "^0.28"
+testcontainers = "^4.0"
