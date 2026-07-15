@@ -34,9 +34,7 @@ class SlidingWindow(RateLimiter):
         elapsed = now % self.window
         weight = (self.window - elapsed) / self.window
 
-        estimated_count = int(
-            previous_count * weight + current_count
-        )
+        estimated_count = int(previous_count * weight + current_count)
 
         allowed = estimated_count < self.limit
 
@@ -49,9 +47,7 @@ class SlidingWindow(RateLimiter):
             await pipe.execute()
 
             current_count += 1
-            estimated_count = int(
-                previous_count * weight + current_count
-            )
+            estimated_count = int(previous_count * weight + current_count)
 
         reset_after = self.window - elapsed
 

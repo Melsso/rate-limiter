@@ -5,7 +5,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from rate_limiter.algorithms.base import RateLimiter
-from rate_limiter.core.response import too_many_requests_response, rate_limit_headers
+from rate_limiter.core.response import rate_limit_headers, too_many_requests_response
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(
@@ -21,7 +22,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        key = request.client.host
+        key = request.client.host if request.client else "unknown"
 
         result = await self.limiter.allow(key)
 
@@ -30,8 +31,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
 
-        response.headers.update(
-            rate_limit_headers(result)
-        )
+        response.headers.update(rate_limit_headers(result))
 
         return response

@@ -1,5 +1,4 @@
 import pytest
-
 from fastapi import FastAPI, Request
 from httpx import ASGITransport, AsyncClient
 

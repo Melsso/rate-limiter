@@ -1,6 +1,6 @@
 import pytest_asyncio
-from testcontainers.redis import RedisContainer
 from redis.asyncio import Redis
+from testcontainers.redis import RedisContainer
 
 
 @pytest_asyncio.fixture(scope="session")

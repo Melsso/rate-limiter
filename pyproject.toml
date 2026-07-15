@@ -19,3 +19,27 @@ pytest = "^9.0"
 pytest-asyncio = "^1.0"
 httpx = "^0.28"
 testcontainers = "^4.0"
+ruff = "^0.15.21"
+mypy = "^2.3.0"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true

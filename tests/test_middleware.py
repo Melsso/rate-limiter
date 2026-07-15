@@ -5,6 +5,7 @@ from httpx import ASGITransport, AsyncClient
 from rate_limiter import FixedWindow
 from rate_limiter.middleware import RateLimitMiddleware
 
+
 @pytest.mark.asyncio
 async def test_rate_limit_middleware_blocks_requests(redis):
     app = FastAPI()

@@ -1,22 +1,27 @@
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from functools import wraps
+from typing import Any
 
 from fastapi import Request, Response
 
 from rate_limiter.algorithms.base import RateLimiter
-from rate_limiter.core.response import too_many_requests_response, rate_limit_headers
+from rate_limiter.core.response import rate_limit_headers, too_many_requests_response
 
 
 def rate_limit(
     limiter: RateLimiter,
     key_func: Callable[[Request], str] | None = None,
-):
+) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
     if key_func is None:
-        key_func = lambda request: request.client.host
 
-    def decorator(func):
+        def key_func(request: Request) -> str:
+            return request.client.host if request.client else "unknown"
+
+    def decorator(
+        func: Callable[..., Awaitable[Any]],
+    ) -> Callable[..., Awaitable[Any]]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: Any, **kwargs: Any) -> Any:
             request = kwargs.get("request")
 
             if request is None:
@@ -26,9 +31,7 @@ def rate_limit(
                         break
 
             if request is None:
-                raise RuntimeError(
-                    "rate_limit decorator requires a Request parameter"
-                )
+                raise RuntimeError("rate_limit decorator requires a Request parameter")
 
             key = key_func(request)
 
@@ -40,9 +43,7 @@ def rate_limit(
             response = await func(*args, **kwargs)
 
             if isinstance(response, Response):
-                response.headers.update(
-                    rate_limit_headers(result)
-                )
+                response.headers.update(rate_limit_headers(result))
 
             return response
 

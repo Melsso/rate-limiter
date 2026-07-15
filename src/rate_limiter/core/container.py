@@ -1,8 +1,6 @@
-from rate_limiter import FixedWindow, TokenBucket, SlidingWindow
-
-from rate_limiter.core.redis import redis
+from rate_limiter import FixedWindow
 from rate_limiter.core.config import settings
-
+from rate_limiter.core.redis import redis
 
 limiter = FixedWindow(
     redis=redis,
