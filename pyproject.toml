@@ -1,45 +1,49 @@
-[tool.poetry]
+[project]
 name = "rate-limiter"
 version = "0.1.0"
-description = "Redis backed FastAPI rate limiter"
-authors = ["Your Name <your@email.com>"]
+description = "Redis-backed async rate limiter for FastAPI (fixed window, sliding window, token bucket)"
+authors = [
+    {name = "Mallem Sofiane", email = "melsopv@gmail.com"}
+]
 readme = "README.md"
-packages = [
-    { include = "rate_limiter", from = "src" }
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["rate-limit", "fastapi", "redis", "asyncio", "token-bucket"]
+classifiers = [
+    "Framework :: FastAPI",
+    "Framework :: AsyncIO",
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-fastapi = "^0.115"
-redis = "^6.0"
-pydantic-settings = "^2.0"
+dependencies = [
+    "fastapi>=0.100",
+    "starlette>=0.27",
+    "redis>=5.0.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/Melsso/rate-limiter"
+Issues = "https://github.com/Melsso/rate-limiter/issues"
+
+[tool.poetry]
+packages = [{ include = "rate_limiter", from = "src" }]
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^9.0"
+pytest = ">=9.1.1,<10.0.0"
 pytest-asyncio = "^1.0"
-httpx = "^0.28"
+httpx = "^0.28.1"
 testcontainers = "^4.0"
-ruff = "^0.15.21"
-mypy = "^2.3.0"
+ruff = ">=0.16.9,<0.17.0"
+mypy = ">=2.3.1,<3.0.0"
 
-[tool.ruff]
-line-length = 88
-target-version = "py311"
-
-[tool.ruff.lint]
-select = [
-    "E",
-    "F",
-    "I",
-    "UP",
-]
-
-[tool.ruff.format]
-quote-style = "double"
-
-
-[tool.mypy]
-python_version = "3.11"
-check_untyped_defs = true
-disallow_untyped_defs = true
+[[tool.mypy.overrides]]
+module = "testcontainers.*"
 ignore_missing_imports = true
+
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"

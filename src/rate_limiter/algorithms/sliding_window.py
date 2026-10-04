@@ -1,9 +1,11 @@
-import time
+from pathlib import Path
 
 from redis.asyncio import Redis
 
 from rate_limiter.algorithms.base import RateLimiter
 from rate_limiter.schemas import RateLimitResult
+
+LUA_DIR = Path(__file__).resolve().parent.parent / "lua"
 
 
 class SlidingWindow(RateLimiter):
@@ -12,51 +14,30 @@ class SlidingWindow(RateLimiter):
         redis: Redis,
         limit: int,
         window: int,
-    ):
+        prefix: str = "rl:sw",
+    ) -> None:
+        if limit < 1:
+            raise ValueError("limit must be >= 1")
+        if window < 1:
+            raise ValueError("window must be >= 1")
+
         self.redis = redis
         self.limit = limit
         self.window = window
+        self.prefix = prefix
+        self.script = redis.register_script(
+            (LUA_DIR / "sliding_window.lua").read_text()
+        )
 
     async def allow(self, key: str) -> RateLimitResult:
-        now = int(time.time())
-        current_window = now // self.window
-        previous_window = current_window - 1
-
-        current_key = f"rate:{key}:{current_window}"
-        previous_key = f"rate:{key}:{previous_window}"
-
-        current_count = await self.redis.get(current_key)
-        previous_count = await self.redis.get(previous_key)
-
-        current_count = int(current_count or 0)
-        previous_count = int(previous_count or 0)
-
-        elapsed = now % self.window
-        weight = (self.window - elapsed) / self.window
-
-        estimated_count = int(previous_count * weight + current_count)
-
-        allowed = estimated_count < self.limit
-
-        if allowed:
-            pipe = self.redis.pipeline()
-
-            pipe.incr(current_key)
-            pipe.expire(current_key, self.window * 2)
-
-            await pipe.execute()
-
-            current_count += 1
-            estimated_count = int(previous_count * weight + current_count)
-
-        reset_after = self.window - elapsed
+        allowed, remaining, reset_after = await self.script(
+            keys=[f"{self.prefix}:{key}"],
+            args=[self.limit, self.window],
+        )
 
         return RateLimitResult(
-            allowed=allowed,
+            allowed=bool(int(allowed)),
             limit=self.limit,
-            remaining=max(
-                0,
-                self.limit - estimated_count,
-            ),
-            reset_after=reset_after,
+            remaining=int(remaining),
+            reset_after=int(reset_after),
         )

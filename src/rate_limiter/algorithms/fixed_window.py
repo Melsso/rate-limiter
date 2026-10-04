@@ -5,8 +5,7 @@ from redis.asyncio import Redis
 from rate_limiter.algorithms.base import RateLimiter
 from rate_limiter.schemas import RateLimitResult
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-LUA_DIR = BASE_DIR / "lua"
+LUA_DIR = Path(__file__).resolve().parent.parent / "lua"
 
 
 class FixedWindow(RateLimiter):
@@ -15,22 +14,25 @@ class FixedWindow(RateLimiter):
         redis: Redis,
         limit: int,
         window: int,
-    ):
+        prefix: str = "rl:fw",
+    ) -> None:
+        if limit < 1:
+            raise ValueError("limit must be >= 1")
+        if window < 1:
+            raise ValueError("window must be >= 1")
+
         self.redis = redis
         self.limit = limit
         self.window = window
-
-        script = (LUA_DIR / "fixed_window.lua").read_text()
-        self.script = self.redis.register_script(script)
+        self.prefix = prefix
+        self.script = redis.register_script((LUA_DIR / "fixed_window.lua").read_text())
 
     async def allow(self, key: str) -> RateLimitResult:
         current, ttl = await self.script(
-            keys=[key],
+            keys=[f"{self.prefix}:{key}"],
             args=[self.window],
         )
-
-        current = int(current)
-        ttl = int(ttl)
+        current, ttl = int(current), int(ttl)
 
         return RateLimitResult(
             allowed=current <= self.limit,

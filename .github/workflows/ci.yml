@@ -2,40 +2,60 @@ name: CI
 
 on:
   push:
-    branches:
-      - dev
+    branches: [dev, main]
   pull_request:
+    branches: [dev, main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      redis:
-        image: redis:8-alpine
-        ports:
-          - 6379:6379
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Python
+      - name: Set Up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Poetry
         run: pip install poetry
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: poetry install
 
-      - name: Lint
+      - name: Run Ruff
         run: poetry run ruff check .
 
-      - name: Type check
-        run: poetry run mypy src
+      - name: Run Ruff Format Check
+        run: poetry run ruff format --check .
 
-      - name: Tests
+      - name: Run Typecheck
+        run: poetry run mypy .
+
+      - name: Run Tests
         run: poetry run pytest
+
+      - name: Build Package
+        if: matrix.python-version == '3.11'
+        run: poetry build
+
+      - name: Check Package Contents
+        if: matrix.python-version == '3.11'
+        run: |
+          for f in py.typed fixed_window.lua sliding_window.lua token_bucket.lua; do
+            unzip -l dist/*.whl | grep -q "$f" || { echo "missing $f"; exit 1; }
+          done
+
+      - name: Verify Package Install
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m venv /tmp/venv
+          /tmp/venv/bin/pip install dist/*.whl
+          /tmp/venv/bin/python -c "import rate_limiter; print(rate_limiter.__version__)"

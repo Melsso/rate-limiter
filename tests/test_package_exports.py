@@ -1,13 +1,17 @@
-from rate_limiter import (
-    FixedWindow,
-    SlidingWindow,
-    TokenBucket,
-    rate_limit,
-)
+import rate_limiter
 
 
 def test_public_exports():
-    assert FixedWindow
-    assert SlidingWindow
-    assert TokenBucket
-    assert rate_limit
+    expected = {
+        "FixedWindow",
+        "SlidingWindow",
+        "TokenBucket",
+        "RateLimitResult",
+        "RateLimit",
+        "rate_limit",
+        "default_key_func",
+        "forwarded_key_func",
+    }
+    assert set(rate_limiter.__all__) == expected
+    for name in expected:
+        assert hasattr(rate_limiter, name)

@@ -1,9 +1,9 @@
 local current = redis.call("INCR", KEYS[1])
+local pttl = redis.call("PTTL", KEYS[1])
 
-if current == 1 then
-    redis.call("EXPIRE", KEYS[1], ARGV[1])
+if current == 1 or pttl < 0 then
+    pttl = tonumber(ARGV[1]) * 1000
+    redis.call("PEXPIRE", KEYS[1], pttl)
 end
 
-local ttl = redis.call("TTL", KEYS[1])
-
-return {current, ttl}
+return {current, math.ceil(pttl / 1000)}

@@ -1,4 +1,4 @@
-from fastapi import Response
+from starlette.responses import JSONResponse, Response
 
 from rate_limiter.schemas import RateLimitResult
 
@@ -11,15 +11,15 @@ def rate_limit_headers(result: RateLimitResult) -> dict[str, str]:
     }
 
 
-def too_many_requests_response(
-    result: RateLimitResult,
-) -> Response:
+def rejection_headers(result: RateLimitResult) -> dict[str, str]:
     headers = rate_limit_headers(result)
+    headers["Retry-After"] = str(max(1, result.reset_after))
+    return headers
 
-    headers["Retry-After"] = str(result.reset_after)
 
-    return Response(
-        content="Too Many Requests",
+def too_many_requests_response(result: RateLimitResult) -> Response:
+    return JSONResponse(
+        {"detail": "Too Many Requests"},
         status_code=429,
-        headers=headers,
+        headers=rejection_headers(result),
     )

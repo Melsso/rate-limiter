@@ -1,39 +1,31 @@
-local tokens = tonumber(redis.call("GET", KEYS[1]))
-local last_time = tonumber(redis.call("GET", KEYS[2]))
-
 local capacity = tonumber(ARGV[1])
-local refill_rate = tonumber(ARGV[2])
-local now = tonumber(ARGV[3])
+local rate     = tonumber(ARGV[2])
 
-if tokens == nil then
-    tokens = capacity
+local t = redis.call("TIME")
+local now = tonumber(t[1]) + tonumber(t[2]) / 1000000
+
+local d = redis.call("HMGET", KEYS[1], "tokens", "ts")
+local tokens, ts = tonumber(d[1]), tonumber(d[2])
+if tokens == nil or ts == nil then
+    tokens, ts = capacity, now
 end
 
-if last_time == nil then
-    last_time = now
-end
-
-local elapsed = now - last_time
-
-tokens = math.min(
-    capacity,
-    tokens + (elapsed * refill_rate)
-)
+tokens = math.min(capacity, tokens + math.max(0, now - ts) * rate)
 
 local allowed = 0
-
 if tokens >= 1 then
     tokens = tokens - 1
     allowed = 1
 end
 
-local ttl = math.ceil(capacity / refill_rate) + 60
+redis.call("HSET", KEYS[1], "tokens", tokens, "ts", now)
+redis.call("EXPIRE", KEYS[1], math.ceil(capacity / rate) + 1)
 
-redis.call("SET", KEYS[1], tokens, "EX", ttl)
-redis.call("SET", KEYS[2], now, "EX", ttl)
+local reset
+if allowed == 1 then
+    reset = math.ceil((capacity - tokens) / rate)
+else
+    reset = math.ceil((1 - tokens) / rate)
+end
 
-return {
-    allowed,
-    math.floor(tokens),
-    math.floor((capacity - tokens) / refill_rate)
-}
+return {allowed, math.floor(tokens), reset}
