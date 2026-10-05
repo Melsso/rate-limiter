@@ -11,6 +11,8 @@ def test_public_exports():
         "rate_limit",
         "default_key_func",
         "forwarded_key_func",
+        "hashed_key_func",
+        "ip_key_func",
     }
     assert set(rate_limiter.__all__) == expected
     for name in expected:

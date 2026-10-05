@@ -1,5 +1,7 @@
-local limit  = tonumber(ARGV[1])
-local window = tonumber(ARGV[2])
+local limit   = tonumber(ARGV[1])
+local window  = tonumber(ARGV[2])
+local cost    = tonumber(ARGV[3])
+local consume = ARGV[4] == "1"
 
 local t = redis.call("TIME")
 local now = tonumber(t[1]) + tonumber(t[2]) / 1000000
@@ -21,24 +23,32 @@ local weight = (window - elapsed) / window
 local estimated = p * weight + c
 
 local allowed = 0
-if estimated + 1 <= limit then
-    c = c + 1
-    estimated = estimated + 1
+if estimated + cost <= limit then
     allowed = 1
+    if consume then
+        c = c + cost
+        estimated = estimated + cost
+    end
 end
 
-redis.call("HSET", KEYS[1], "w", w, "c", c, "p", p)
-redis.call("EXPIRE", KEYS[1], window * 2)
+if consume then
+    redis.call("HSET", KEYS[1], "w", w, "c", c, "p", p)
+    redis.call("EXPIRE", KEYS[1], window * 2)
+end
 
 local retry = math.ceil(window - elapsed)
 if allowed == 0 then
-    local room = limit - c - 1
-    if room >= 0 and p > 0 then
-        retry = (window - room * window / p) - elapsed
-    elseif c > 0 then
-        retry = (window - elapsed) + window * (1 - (limit - 1) / c)
+    if cost > limit then
+        retry = window
+    else
+        local room = limit - c - cost
+        if room >= 0 and p > 0 then
+            retry = (window - room * window / p) - elapsed
+        elseif c > 0 then
+            retry = (window - elapsed) + window * (1 - (limit - cost) / c)
+        end
+        retry = math.ceil(retry)
     end
-    retry = math.ceil(retry)
 end
 if retry < 1 then retry = 1 end
 

@@ -1,13 +1,14 @@
 import inspect
 from collections.abc import Callable
 from functools import wraps
-from typing import Any
+from typing import Annotated, Any, get_args, get_origin
 
 from fastapi import Request, Response
 from starlette.concurrency import run_in_threadpool
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from rate_limiter.algorithms.base import RateLimiter
-from rate_limiter.core.guard import KeyFunc
+from rate_limiter.core.guard import IntOrFunc, KeyFunc
 from rate_limiter.dependencies import RateLimit
 from rate_limiter.keys import default_key_func
 
@@ -15,9 +16,16 @@ _REQUEST = "_rate_limit_request"
 _RESPONSE = "_rate_limit_response"
 
 
+def _unwrap_annotated(annotation: Any) -> Any:
+    while get_origin(annotation) is Annotated:
+        annotation = get_args(annotation)[0]
+    return annotation
+
+
 def _find_param(params: list[inspect.Parameter], cls: type) -> str | None:
     for p in params:
-        if isinstance(p.annotation, type) and issubclass(p.annotation, cls):
+        annotation = _unwrap_annotated(p.annotation)
+        if isinstance(annotation, type) and issubclass(annotation, cls):
             return p.name
     return None
 
@@ -28,6 +36,8 @@ def rate_limit(
     fail_open: bool = True,
     namespace: str | None = None,
     exempt_when: Callable[[Request], bool] | None = None,
+    cost: IntOrFunc = 1,
+    limit: IntOrFunc | None = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     dependency = RateLimit(
         limiter,
@@ -35,6 +45,8 @@ def rate_limit(
         fail_open=fail_open,
         namespace=namespace,
         exempt_when=exempt_when,
+        cost=cost,
+        limit=limit,
     )
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -81,10 +93,15 @@ def rate_limit(
 
             headers = await dependency.evaluate(request, response)
 
-            if is_async:
-                result = await func(*args, **kwargs)
-            else:
-                result = await run_in_threadpool(func, *args, **kwargs)
+            try:
+                if is_async:
+                    result = await func(*args, **kwargs)
+                else:
+                    result = await run_in_threadpool(func, *args, **kwargs)
+            except StarletteHTTPException as exc:
+                if headers:
+                    exc.headers = {**headers, **(exc.headers or {})}
+                raise
 
             if headers and isinstance(result, Response):
                 for name, value in headers.items():

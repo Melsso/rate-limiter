@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [dev, main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -30,7 +33,7 @@ jobs:
       - name: Install Dependencies
         run: poetry install
 
-      - name: Run Ruff
+      - name: Run Lint
         run: poetry run ruff check .
 
       - name: Run Ruff Format Check
@@ -41,21 +44,3 @@ jobs:
 
       - name: Run Tests
         run: poetry run pytest
-
-      - name: Build Package
-        if: matrix.python-version == '3.11'
-        run: poetry build
-
-      - name: Check Package Contents
-        if: matrix.python-version == '3.11'
-        run: |
-          for f in py.typed fixed_window.lua sliding_window.lua token_bucket.lua; do
-            unzip -l dist/*.whl | grep -q "$f" || { echo "missing $f"; exit 1; }
-          done
-
-      - name: Verify Package Install
-        if: matrix.python-version == '3.11'
-        run: |
-          python -m venv /tmp/venv
-          /tmp/venv/bin/pip install dist/*.whl
-          /tmp/venv/bin/python -c "import rate_limiter; print(rate_limiter.__version__)"

@@ -9,7 +9,13 @@ from rate_limiter.algorithms.base import RateLimiter
 
 
 class BrokenLimiter(RateLimiter):
-    async def allow(self, key):
+    async def allow(self, key, cost=1, limit=None):
+        raise RedisConnectionError("down")
+
+    async def peek(self, key, cost=1, limit=None):
+        raise RedisConnectionError("down")
+
+    async def reset(self, key):
         raise RedisConnectionError("down")
 
 

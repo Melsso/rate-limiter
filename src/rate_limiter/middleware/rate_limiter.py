@@ -6,7 +6,12 @@ from starlette.responses import Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from rate_limiter.algorithms.base import RateLimiter
-from rate_limiter.core.guard import Guard, KeyFunc, RateLimiterUnavailable
+from rate_limiter.core.guard import (
+    Guard,
+    IntOrFunc,
+    KeyFunc,
+    RateLimiterUnavailable,
+)
 from rate_limiter.core.response import rate_limit_headers, too_many_requests_response
 from rate_limiter.keys import default_key_func
 
@@ -21,6 +26,8 @@ class RateLimitMiddleware:
         exempt_when: Callable[[Request], bool] | None = None,
         exclude_paths: Iterable[str] = (),
         exclude_methods: Iterable[str] = ("OPTIONS",),
+        cost: IntOrFunc = 1,
+        limit: IntOrFunc | None = None,
     ) -> None:
         self.app = app
         self.guard = Guard(
@@ -28,6 +35,8 @@ class RateLimitMiddleware:
             key_func=key_func,
             fail_open=fail_open,
             exempt_when=exempt_when,
+            cost=cost,
+            limit=limit,
         )
         self.exclude_paths = frozenset(exclude_paths)
         self.exclude_methods = frozenset(m.upper() for m in exclude_methods)
