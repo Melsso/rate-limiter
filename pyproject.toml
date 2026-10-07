@@ -1,6 +1,6 @@
 [project]
 name = "rate-limiter"
-version = "0.1.0"
+version = "0.2.0"
 description = "Redis-backed async rate limiter for FastAPI (fixed window, sliding window, token bucket)"
 authors = [
     {name = "Mallem Sofiane", email = "melsopv@gmail.com"}
@@ -20,9 +20,9 @@ classifiers = [
 ]
 
 dependencies = [
-    "fastapi>=0.100",
-    "starlette>=0.27",
-    "redis>=5.0.1",
+    "fastapi>=0.100,<1.0",
+    "starlette>=0.27,<2.0",
+    "redis>=5.0.1,<8",
 ]
 
 [project.urls]

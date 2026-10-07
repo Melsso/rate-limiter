@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Awaitable, Callable
 
-from redis.exceptions import RedisError
+from redis.exceptions import RedisClusterException, RedisError
 from starlette.requests import Request
 
 from rate_limiter.algorithms.base import RateLimiter, check_cost, check_limit
@@ -16,6 +16,8 @@ from rate_limiter.schemas import RateLimitResult
 
 KeyFunc = Callable[[Request], str | Awaitable[str]]
 IntOrFunc = int | Callable[[Request], int]
+
+BACKEND_ERRORS = (RedisError, RedisClusterException)
 
 
 async def resolve_key(key_func: KeyFunc, request: Request) -> str:
@@ -72,7 +74,7 @@ class Guard:
 
         try:
             result = await self.limiter.allow(key, cost=cost, limit=limit)
-        except RedisError as exc:
+        except BACKEND_ERRORS as exc:
             self._breaker.record_failure(self.cooldown)
             return await self._degrade(key, cost, limit, exc)
 

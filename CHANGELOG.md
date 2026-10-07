@@ -7,6 +7,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-07
+
 ### Added
 
 - `allow(key, cost=1, limit=None)`: weighted requests and a per-call limit
@@ -53,14 +55,18 @@ and this project follows [Semantic Versioning](https://semver.org/).
   `minute`, `hour` and `day` (singular or plural), with an optional multiplier
   such as `"10/5 minutes"`. For `TokenBucket`, `"5/minute"` means capacity 5
   refilled at 5 tokens per 60 seconds.
+- Redis Cluster support: the limiters accept a `redis.asyncio.cluster.RedisCluster`
+  client. Each script touches one key, so it runs on the node that owns it.
 - `release.yml` workflow: on a `v*` tag it checks the tag against the package
   version and against `main`, runs lint, type checks and tests, builds the
   package, verifies the wheel, and creates a GitHub Release using the matching
   section of this file.
 - CI runs the test suite against Redis 5, 6 and 7 and Valkey 8 in addition to
-  Redis 8. Locally, set `REDIS_IMAGE` to test against another image.
-- Redis Cluster tests (`tests/test_cluster.py`) against a 3-master cluster. They
-  run only with `CLUSTER_TESTS=1` and have their own CI job.
+  Redis 8, against a 3-master Redis Cluster, and against the oldest allowed
+  versions of `fastapi`, `starlette` and `redis`. Locally, set `REDIS_IMAGE` to
+  test against another image, and `CLUSTER_TESTS=1` to run the cluster tests
+  (`CLUSTER_BASE_PORT` moves the first port, `REQUIRE_CLUSTER=1` turns a
+  container start failure into a test failure instead of a skip).
 
 ### Changed
 
@@ -86,6 +92,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
   seconds) instead of once per decorator, dependency or middleware instance. A
   warning is now also logged when requests are rejected because the backend is
   unavailable, and when the fallback is used.
+- Dependency ranges are now bounded: `fastapi>=0.100,<1.0`,
+  `starlette>=0.27,<2.0` and `redis>=5.0.1,<8`.
 - CI: package build and verification moved from `ci.yml` to `release.yml`.
   `ci.yml` keeps lint, type checks and tests.
 - Tests no longer rely on `sleep` to wait for expiry or refill; they edit the
@@ -93,6 +101,10 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- `RedisClusterException` (for example a cluster that is down or not fully
+  covered) is now treated as a backend failure. It does not derive from
+  `RedisError`, so it used to bypass the circuit breaker, the fallback and
+  `fail_open` and surface as a 500.
 - `@rate_limit` now keeps the `X-RateLimit-*` headers on responses produced when
   the handler raises `HTTPException`. Previously they were dropped.
 - `forwarded_key_func(trusted_proxies=0)` now raises `ValueError`. It used to

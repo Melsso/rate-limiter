@@ -1,9 +1,8 @@
 from pathlib import Path
 from typing import Self
 
-from redis.asyncio import Redis
-
 from rate_limiter.algorithms.base import RateLimiter, check_cost, check_limit
+from rate_limiter.clients import RedisClient, register_script
 from rate_limiter.limits import parse_limit
 from rate_limiter.schemas import RateLimitResult
 
@@ -13,7 +12,7 @@ LUA_DIR = Path(__file__).resolve().parent.parent / "lua"
 class SlidingWindow(RateLimiter):
     def __init__(
         self,
-        redis: Redis,
+        redis: RedisClient,
         limit: int,
         window: int,
         prefix: str = "rl:sw",
@@ -27,12 +26,12 @@ class SlidingWindow(RateLimiter):
         self.limit = limit
         self.window = window
         self.prefix = prefix
-        self.script = redis.register_script(
-            (LUA_DIR / "sliding_window.lua").read_text()
+        self.script = register_script(
+            redis, (LUA_DIR / "sliding_window.lua").read_text()
         )
 
     @classmethod
-    def from_limit(cls, redis: Redis, spec: str, prefix: str = "rl:sw") -> Self:
+    def from_limit(cls, redis: RedisClient, spec: str, prefix: str = "rl:sw") -> Self:
         limit, window = parse_limit(spec)
         return cls(redis, limit, window, prefix=prefix)
 
