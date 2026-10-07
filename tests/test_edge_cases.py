@@ -1,4 +1,4 @@
-import asyncio
+import math
 
 import pytest
 from fastapi import FastAPI
@@ -28,25 +28,25 @@ async def test_middleware_skips_options_by_default(redis):
 
 
 @pytest.mark.asyncio
-async def test_fixed_window_retry_after_is_accurate(redis):
-    limiter = FixedWindow(redis=redis, limit=1, window=1)
+async def test_fixed_window_retry_after_matches_key_ttl(redis):
+    limiter = FixedWindow(redis=redis, limit=1, window=60)
     await limiter.allow("u")
     blocked = await limiter.allow("u")
+    pttl = await redis.pttl("rl:fw:u")
+
     assert not blocked.allowed
-    assert 0 <= blocked.reset_after <= 1
-    await asyncio.sleep(blocked.reset_after + 0.1)
-    assert (await limiter.allow("u")).allowed
+    assert 0 < blocked.reset_after <= 60
+    assert blocked.reset_after - 1 <= math.ceil(pttl / 1000) <= blocked.reset_after
 
 
 @pytest.mark.asyncio
-async def test_sliding_window_retry_after_is_accurate(redis):
-    limiter = SlidingWindow(redis=redis, limit=1, window=1)
+async def test_sliding_window_retry_after_is_within_two_windows(redis):
+    limiter = SlidingWindow(redis=redis, limit=1, window=3600)
     await limiter.allow("u")
     blocked = await limiter.allow("u")
+
     assert not blocked.allowed
-    assert 1 <= blocked.reset_after <= 2
-    await asyncio.sleep(blocked.reset_after + 0.1)
-    assert (await limiter.allow("u")).allowed
+    assert 3601 <= blocked.reset_after <= 7200
 
 
 @pytest.mark.asyncio

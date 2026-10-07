@@ -27,20 +27,25 @@ async def test_token_bucket_concurrency(redis):
 
 
 @pytest.mark.asyncio
-async def test_fixed_window_resets_after_window(redis):
-    limiter = FixedWindow(redis=redis, limit=1, window=1)
+async def test_fixed_window_resets_after_expiry(redis, expire_now):
+    limiter = FixedWindow(redis=redis, limit=1, window=60)
     assert (await limiter.allow("u")).allowed
     assert not (await limiter.allow("u")).allowed
-    await asyncio.sleep(1.2)
+
+    await expire_now("rl:fw:u")
+
     assert (await limiter.allow("u")).allowed
 
 
 @pytest.mark.asyncio
 async def test_sliding_window_recovers_after_two_windows(redis):
-    limiter = SlidingWindow(redis=redis, limit=1, window=1)
+    limiter = SlidingWindow(redis=redis, limit=1, window=3600)
     assert (await limiter.allow("u")).allowed
     assert not (await limiter.allow("u")).allowed
-    await asyncio.sleep(2.2)
+
+    stored = int(await redis.hget("rl:sw:u", "w"))
+    await redis.hset("rl:sw:u", "w", stored - 2)
+
     assert (await limiter.allow("u")).allowed
 
 
@@ -48,7 +53,11 @@ async def test_sliding_window_recovers_after_two_windows(redis):
 async def test_token_bucket_refills(redis):
     limiter = TokenBucket(redis=redis, capacity=1, refill_rate=10)
     assert (await limiter.allow("u")).allowed
-    await asyncio.sleep(0.3)
+    assert not (await limiter.allow("u")).allowed
+
+    stored = float(await redis.hget("rl:tb:u", "ts"))
+    await redis.hset("rl:tb:u", "ts", stored - 1)
+
     assert (await limiter.allow("u")).allowed
 
 

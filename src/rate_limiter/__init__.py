@@ -1,8 +1,16 @@
 from importlib.metadata import PackageNotFoundError, version
 
-from rate_limiter.algorithms import FixedWindow, SlidingWindow, TokenBucket
+from rate_limiter.algorithms import (
+    FixedWindow,
+    MemoryFixedWindow,
+    MemorySlidingWindow,
+    MemoryTokenBucket,
+    SlidingWindow,
+    TokenBucket,
+)
 from rate_limiter.decorators import rate_limit
 from rate_limiter.dependencies import RateLimit
+from rate_limiter.exceptions import RateLimiterUnavailableError, RateLimitExceeded
 from rate_limiter.keys import (
     default_key_func,
     forwarded_key_func,
@@ -18,8 +26,13 @@ except PackageNotFoundError:
 
 __all__ = [
     "FixedWindow",
+    "MemoryFixedWindow",
+    "MemorySlidingWindow",
+    "MemoryTokenBucket",
     "RateLimit",
+    "RateLimitExceeded",
     "RateLimitResult",
+    "RateLimiterUnavailableError",
     "SlidingWindow",
     "TokenBucket",
     "default_key_func",

@@ -1,3 +1,6 @@
+import asyncio
+import os
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
@@ -6,6 +9,8 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from testcontainers.redis import RedisContainer
 
 from rate_limiter.algorithms.base import RateLimiter
+
+REDIS_IMAGE = os.environ.get("REDIS_IMAGE", "redis:8-alpine")
 
 
 class BrokenLimiter(RateLimiter):
@@ -19,9 +24,25 @@ class BrokenLimiter(RateLimiter):
         raise RedisConnectionError("down")
 
 
+class FakeClock:
+    def __init__(self, start=360_100.0):
+        self.now = start
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
+@pytest.fixture
+def clock():
+    return FakeClock()
+
+
 @pytest.fixture(scope="session")
 def redis_container():
-    with RedisContainer("redis:8-alpine") as container:
+    with RedisContainer(REDIS_IMAGE) as container:
         yield container
 
 
@@ -35,6 +56,19 @@ async def redis(redis_container):
     yield client
     await client.flushall()
     await client.aclose()
+
+
+@pytest.fixture
+def expire_now(redis):
+    async def run(key):
+        await redis.pexpire(key, 1)
+        for _ in range(200):
+            if not await redis.exists(key):
+                return
+            await asyncio.sleep(0.01)
+        raise AssertionError(f"{key} did not expire")
+
+    return run
 
 
 @pytest.fixture

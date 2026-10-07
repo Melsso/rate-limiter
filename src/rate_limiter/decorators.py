@@ -9,6 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from rate_limiter.algorithms.base import RateLimiter
 from rate_limiter.core.guard import IntOrFunc, KeyFunc
+from rate_limiter.core.health import DEFAULT_COOLDOWN
 from rate_limiter.dependencies import RateLimit
 from rate_limiter.keys import default_key_func
 
@@ -38,6 +39,8 @@ def rate_limit(
     exempt_when: Callable[[Request], bool] | None = None,
     cost: IntOrFunc = 1,
     limit: IntOrFunc | None = None,
+    fallback: RateLimiter | None = None,
+    cooldown: float = DEFAULT_COOLDOWN,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     dependency = RateLimit(
         limiter,
@@ -47,6 +50,8 @@ def rate_limit(
         exempt_when=exempt_when,
         cost=cost,
         limit=limit,
+        fallback=fallback,
+        cooldown=cooldown,
     )
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:

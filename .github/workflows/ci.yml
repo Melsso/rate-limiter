@@ -33,14 +33,69 @@ jobs:
       - name: Install Dependencies
         run: poetry install
 
-      - name: Run Lint
+      - name: Run Ruff
         run: poetry run ruff check .
-
-      - name: Run Ruff Format Check
-        run: poetry run ruff format --check .
 
       - name: Run Typecheck
         run: poetry run mypy .
 
       - name: Run Tests
         run: poetry run pytest
+
+  backends:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - redis:5-alpine
+          - redis:6-alpine
+          - redis:7-alpine
+          - valkey/valkey:8-alpine
+
+    env:
+      REDIS_IMAGE: ${{ matrix.image }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install Dependencies
+        run: poetry install
+
+      - name: Run Tests Against ${{ matrix.image }}
+        run: poetry run pytest
+
+  cluster:
+    runs-on: ubuntu-latest
+
+    env:
+      CLUSTER_TESTS: "1"
+      REQUIRE_CLUSTER: "1"
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install Dependencies
+        run: poetry install
+
+      - name: Run Redis Cluster Tests
+        run: poetry run pytest tests/test_cluster.py

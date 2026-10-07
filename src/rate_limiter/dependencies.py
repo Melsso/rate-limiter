@@ -1,15 +1,12 @@
 from collections.abc import Callable
 
-from fastapi import HTTPException, Request, Response
+from fastapi import Request, Response
 
 from rate_limiter.algorithms.base import RateLimiter
-from rate_limiter.core.guard import (
-    Guard,
-    IntOrFunc,
-    KeyFunc,
-    RateLimiterUnavailable,
-)
-from rate_limiter.core.response import rate_limit_headers, rejection_headers
+from rate_limiter.core.guard import Guard, IntOrFunc, KeyFunc
+from rate_limiter.core.health import DEFAULT_COOLDOWN
+from rate_limiter.core.response import rate_limit_headers
+from rate_limiter.exceptions import RateLimitExceeded
 from rate_limiter.keys import default_key_func
 
 
@@ -23,6 +20,8 @@ class RateLimit:
         exempt_when: Callable[[Request], bool] | None = None,
         cost: IntOrFunc = 1,
         limit: IntOrFunc | None = None,
+        fallback: RateLimiter | None = None,
+        cooldown: float = DEFAULT_COOLDOWN,
     ) -> None:
         self.guard = Guard(
             limiter,
@@ -32,20 +31,17 @@ class RateLimit:
             exempt_when=exempt_when,
             cost=cost,
             limit=limit,
+            fallback=fallback,
+            cooldown=cooldown,
         )
 
     async def evaluate(self, request: Request, response: Response) -> dict[str, str]:
-        try:
-            result = await self.guard.check(request)
-        except RateLimiterUnavailable as exc:
-            raise HTTPException(503, "Rate limiter unavailable") from exc
+        result = await self.guard.check(request)
 
         if result is None:
             return {}
         if not result.allowed:
-            raise HTTPException(
-                429, "Too Many Requests", headers=rejection_headers(result)
-            )
+            raise RateLimitExceeded(result)
 
         headers = rate_limit_headers(result)
         response.headers.update(headers)

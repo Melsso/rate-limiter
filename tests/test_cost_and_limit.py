@@ -1,16 +1,40 @@
 import pytest
 
-from rate_limiter import FixedWindow, SlidingWindow, TokenBucket
+from rate_limiter import (
+    FixedWindow,
+    MemoryFixedWindow,
+    MemorySlidingWindow,
+    MemoryTokenBucket,
+    SlidingWindow,
+    TokenBucket,
+)
 
 
-@pytest.fixture(params=["fixed_window", "sliding_window", "token_bucket"])
-def make_limiter(request, redis):
+@pytest.fixture(
+    params=[
+        "fixed_window",
+        "sliding_window",
+        "token_bucket",
+        "memory_fixed_window",
+        "memory_sliding_window",
+        "memory_token_bucket",
+    ]
+)
+def make_limiter(request, redis, clock):
     def factory(limit=10):
-        if request.param == "fixed_window":
-            return FixedWindow(redis=redis, limit=limit, window=3600)
-        if request.param == "sliding_window":
-            return SlidingWindow(redis=redis, limit=limit, window=3600)
-        return TokenBucket(redis=redis, capacity=limit, refill_rate=1e-6)
+        match request.param:
+            case "fixed_window":
+                return FixedWindow(redis=redis, limit=limit, window=3600)
+            case "sliding_window":
+                return SlidingWindow(redis=redis, limit=limit, window=3600)
+            case "token_bucket":
+                return TokenBucket(redis=redis, capacity=limit, refill_rate=1e-6)
+            case "memory_fixed_window":
+                return MemoryFixedWindow(limit=limit, window=3600, clock=clock)
+            case "memory_sliding_window":
+                return MemorySlidingWindow(limit=limit, window=3600, clock=clock)
+            case _:
+                return MemoryTokenBucket(capacity=limit, refill_rate=1e-6, clock=clock)
 
     return factory
 
